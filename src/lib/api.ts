@@ -36,7 +36,7 @@ export const api = {
       : apiPath // Use proxy if API_BASE is empty
 
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      // Keep Accept, but avoid forcing Content-Type for simple requests to reduce preflights
       'Accept': 'application/json',
     }
 
@@ -51,8 +51,16 @@ export const api = {
       credentials: 'omit', // Don't send credentials
     }
 
-    if (data && (method === 'POST' || method === 'PUT')) {
-      config.body = JSON.stringify(data)
+    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+      // If sending FormData/Blob/etc, let the browser set Content-Type with proper boundary
+      const isFormLike = (typeof FormData !== 'undefined' && data instanceof FormData) ||
+                         (typeof Blob !== 'undefined' && data instanceof Blob)
+      if (isFormLike) {
+        config.body = data
+      } else {
+        headers['Content-Type'] = 'application/json'
+        config.body = JSON.stringify(data)
+      }
     }
 
     // Debug logging
