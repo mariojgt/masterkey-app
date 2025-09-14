@@ -1,6 +1,10 @@
 
-// API configuration using native fetch with proxy support
-let API_BASE = (import.meta as any).env.VITE_API_BASE || ''
+// API configuration using native fetch with proxy support and Capacitor HTTP for native
+import { Capacitor, CapacitorHttp } from '@capacitor/core'
+const DEV = (import.meta as any).env.DEV
+const DIRECT_API = (import.meta as any).env.VITE_DIRECT_API === 'true'
+// In dev, default to proxy unless explicitly overridden with VITE_DIRECT_API=true
+let API_BASE = DEV && !DIRECT_API ? '' : ((import.meta as any).env.VITE_API_BASE || '')
 let authToken: string | null = null
 
 // Native fetch API wrapper
@@ -70,10 +74,35 @@ export const api = {
       fullURL: fullUrl,
       headers,
       data,
-      usingProxy: !API_BASE
+      usingProxy: !API_BASE,
+      platform: Capacitor.getPlatform()
     })
 
     try {
+      // On native (ios/android), use CapacitorHttp to bypass CORS
+      if (Capacitor.isNativePlatform()) {
+        const httpHeaders: Record<string, string> = { ...headers }
+        const isJson = headers['Content-Type'] === 'application/json'
+        const dataPayload = isJson && config.body ? JSON.parse(config.body as string) : undefined
+        const result = await CapacitorHttp.request({
+          method: method as any,
+          url: fullUrl,
+          headers: httpHeaders,
+          data: dataPayload,
+        })
+
+        const status = result.status
+        const ok = status >= 200 && status < 300
+        console.log('Native HTTP Response:', { status })
+        if (!ok) {
+          const err = new Error(`HTTP ${status}`)
+          ;(err as any).body = result.data
+          throw err
+        }
+        return { data: result.data }
+      }
+
+      // Web (browser): use fetch (proxy in dev avoids CORS)
       const response = await fetch(fullUrl, config)
 
       console.log('API Response:', {
