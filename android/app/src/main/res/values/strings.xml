@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MasterKey</string>
+    <string name="title_activity_main">MasterKey</string>
+    <string name="package_name">com.mariojgt.masterkey</string>
+    <string name="custom_url_scheme">com.mariojgt.masterkey</string>
+</resources>

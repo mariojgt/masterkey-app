@@ -2,7 +2,6 @@
   "appId": "com.mariojgt.masterkey",
   "appName": "MasterKey",
   "webDir": "dist",
-  "bundledWebRuntime": false,
   "server": {
     "androidScheme": "https"
   },
