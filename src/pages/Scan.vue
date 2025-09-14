@@ -12,7 +12,7 @@
             <div class="absolute bottom-3 left-12 w-1 h-1 bg-purple-400 rounded-full animate-ping delay-100"></div>
             <div class="absolute bottom-2 right-20 w-1 h-1 bg-cyan-400 rounded-full animate-pulse delay-200"></div>
           </div>
-          
+
           <!-- Theme Toggle -->
           <div class="absolute top-6 right-6 z-10">
             <button @click="toggleDarkMode" class="theme-toggle animate-theme-switch">
@@ -33,7 +33,7 @@
           </div>
         </div>
 
-        <div class="px-4 py-6">
+  <div class="px-4 py-6">
           <div class="max-w-md mx-auto">
             <!-- Camera View -->
             <div class="relative mb-6">
@@ -71,20 +71,26 @@
             <!-- Controls -->
             <div class="space-y-4 mb-6">
               <div class="grid grid-cols-2 gap-3">
-                <button @click="start" class="btn-primary flex items-center justify-center space-x-2 py-4 glow pulse-glow">
+                <button :disabled="isScanning" @click="start" class="btn-primary flex items-center justify-center space-x-2 py-4 glow pulse-glow disabled:opacity-50 disabled:cursor-not-allowed">
                   <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8,5.14V19.14L19,12.14L8,5.14Z"/>
                   </svg>
-                  <span>Start Scanner</span>
+                  <span>{{ isScanning ? 'Scanning…' : 'Start Scanner' }}</span>
                 </button>
 
-                <button @click="stop" class="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 glow">
+                <button :disabled="!isScanning" @click="stop" class="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 glow disabled:opacity-50 disabled:cursor-not-allowed">
                   <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M18,18H6V6H18V18Z"/>
                   </svg>
                   <span>Stop</span>
                 </button>
               </div>
+
+              <!-- Options -->
+              <label class="flex items-center space-x-3 select-none">
+                <input type="checkbox" v-model="autoApprove" class="form-checkbox h-4 w-4 text-primary-600 rounded" />
+                <span class="text-sm text-themed">Auto-approve web login after scan</span>
+              </label>
             </div>
 
             <!-- Status Message -->
@@ -142,15 +148,39 @@
             </div>
           </div>
         </div>
+
+        <!-- Loading overlay -->
+        <div v-if="loading" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+          <div class="bg-gray-800 text-white px-5 py-4 rounded-xl shadow-xl flex items-center space-x-3">
+            <svg class="animate-spin h-5 w-5 text-primary-400" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            <span class="font-medium">{{ loadingText }}</span>
+          </div>
+        </div>
+
+        <!-- Confirm modal -->
+        <div v-if="confirm.visible" class="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+          <div class="absolute inset-0 bg-black/60" @click="cancelConfirm"></div>
+          <div class="relative w-full md:max-w-md bg-white dark:bg-gray-900 rounded-t-2xl md:rounded-2xl shadow-2xl p-5 m-0 md:m-6">
+            <h3 class="text-lg font-semibold text-themed mb-2">Approve web login?</h3>
+            <p class="text-sm text-themed-muted mb-4">Session: <span class="font-mono">{{ confirm.sessionId }}</span></p>
+            <div class="flex items-center justify-end space-x-3">
+              <button @click="cancelConfirm" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-800 text-themed">Cancel</button>
+              <button @click="approveNow" class="btn-primary px-4 py-2">Approve</button>
+            </div>
+          </div>
+        </div>
       </div>
     </ion-content>
   </ion-page>
 </template>
 <script setup lang="ts">
-import { ref, onBeforeUnmount } from 'vue'
+import { ref, onBeforeUnmount, watch } from 'vue'
 import { IonPage, IonContent } from '@ionic/vue'
 import { BrowserMultiFormatReader } from '@zxing/browser'
-import { api } from '../lib/api'
+import { api, getToken } from '../lib/api'
 import { useDarkMode } from '../composables/useDarkMode'
 
 const { isDarkMode, toggleDarkMode } = useDarkMode()
@@ -160,6 +190,21 @@ const video = ref<HTMLVideoElement | null>(null)
 const message = ref('')
 let control: any = null
 
+// UX state
+const isScanning = ref(false)
+const loading = ref(false)
+const loadingText = ref('Processing…')
+let initialAutoApprove = false
+try { initialAutoApprove = localStorage.getItem('mkey:autoApprove') === '1' } catch {}
+const autoApprove = ref<boolean>(initialAutoApprove)
+
+watch(autoApprove, (v) => {
+  try { localStorage.setItem('mkey:autoApprove', v ? '1' : '0') } catch {}
+})
+
+// Confirm modal state
+const confirm = ref<{ visible: boolean; sessionId: string | null }>({ visible: false, sessionId: null })
+
 function parsePayload(text: string) {
   // mkey:prelogin:{nonce} or mkey:web:{session_id}
   if (!text.startsWith('mkey:')) return null
@@ -168,10 +213,13 @@ function parsePayload(text: string) {
   return { type, value }
 }
 async function start() {
+  if (isScanning.value) return
   message.value = 'Starting camera...'
+  isScanning.value = true
   control = await codeReader.decodeFromVideoDevice(undefined, video.value!, (result, err) => {
     if (result) {
-      stop()
+      // Pause scanning while handling result
+      pause()
       handleResult(result.getText())
     }
   })
@@ -180,22 +228,74 @@ function stop() {
   if (control && typeof control.stop === 'function') control.stop()
   // codeReader.reset() // Method doesn't exist, control.stop() handles cleanup
   message.value = 'Stopped.'
+  isScanning.value = false
+}
+function pause() {
+  if (control && typeof control.stop === 'function') control.stop()
+  isScanning.value = false
 }
 async function handleResult(text: string) {
   const parsed = parsePayload(text)
-  if (!parsed) { message.value = 'Invalid QR payload.'; return }
+  if (!parsed) { message.value = 'Invalid QR payload.'; resumeAfterDelay(); return }
   if (parsed.type === 'web') {
-    try {
-      await api.post('/api/web/approve', { session_id: parsed.value })
-      message.value = 'Web login approved!'
-    } catch (e:any) {
-      message.value = 'Error approving web login.'
+    // If auto-approve, go straight to approve; otherwise ask for confirmation
+    if (autoApprove.value) {
+      await approveSession(parsed.value)
+    } else {
+      confirm.value = { visible: true, sessionId: parsed.value }
     }
   } else if (parsed.type === 'prelogin') {
     message.value = 'Pre-login QR detected. Go to Login page to enter your 6-digit code.'
+    resumeAfterDelay()
   } else {
     message.value = 'Unknown QR type.'
+    resumeAfterDelay()
   }
+}
+
+async function approveSession(sessionId: string) {
+  // Require auth token for protected API
+  const token = getToken()
+  if (!token) {
+    message.value = 'You must be logged in on the app to approve web logins.'
+    resumeAfterDelay()
+    return
+  }
+  loading.value = true
+  loadingText.value = 'Approving login…'
+  try {
+    await api.post('/api/web/approve', { session_id: sessionId })
+    message.value = 'Web login approved! You can return to the browser.'
+  } catch (e:any) {
+    console.error(e)
+    const errBody = e?.body
+    message.value = typeof errBody?.message === 'string'
+      ? `Error: ${errBody.message}`
+      : 'Error approving web login.'
+  } finally {
+    loading.value = false
+    // After handling, resume scanning after a small delay
+    resumeAfterDelay()
+  }
+}
+
+function resumeAfterDelay(ms = 1500) {
+  setTimeout(() => {
+    start()
+  }, ms)
+}
+
+function cancelConfirm() {
+  confirm.value = { visible: false, sessionId: null }
+  // Resume scanning so user can try again
+  resumeAfterDelay(300)
+}
+
+async function approveNow() {
+  if (!confirm.value.sessionId) return
+  const id = confirm.value.sessionId
+  confirm.value = { visible: false, sessionId: null }
+  await approveSession(id)
 }
 onBeforeUnmount(stop)
 </script>
