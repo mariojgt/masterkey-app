@@ -1,76 +1,32 @@
-import { ref, watch, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 
-const isDarkMode = ref(false)
+// Fixed dark mode for the new brand design
+const isDarkMode = ref(true)
 
-// Check system preference
-const getSystemPreference = () => {
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-}
-
-// Get stored preference or system preference
-const getStoredPreference = () => {
-  const stored = localStorage.getItem('darkMode')
-  if (stored !== null) {
-    return JSON.parse(stored)
-  }
-  return getSystemPreference()
-}
-
-// Apply dark mode class to document
-const applyDarkMode = (dark: boolean) => {
-  if (dark) {
-    document.documentElement.classList.add('dark')
-  } else {
-    document.documentElement.classList.remove('dark')
-  }
-}
-
-// Save preference to localStorage
-const savePreference = (dark: boolean) => {
-  localStorage.setItem('darkMode', JSON.stringify(dark))
+// Always apply dark mode class to document since our design is dark-first
+const applyDarkMode = () => {
+  document.documentElement.classList.add('dark')
+  document.body.classList.add('dark')
 }
 
 export const useDarkMode = () => {
+  // No-op functions for compatibility with existing code
   const toggleDarkMode = () => {
-    isDarkMode.value = !isDarkMode.value
+    // Dark mode is fixed, so this does nothing
   }
 
   const setDarkMode = (dark: boolean) => {
-    isDarkMode.value = dark
+    // Dark mode is fixed, so this does nothing
   }
 
   // Initialize dark mode
   const initDarkMode = () => {
-    isDarkMode.value = getStoredPreference()
-    applyDarkMode(isDarkMode.value)
+    applyDarkMode()
   }
 
-  // Watch for changes and apply them
-  watch(isDarkMode, (newValue) => {
-    applyDarkMode(newValue)
-    savePreference(newValue)
-  })
-
-  // Listen for system theme changes
+  // Always initialize dark mode on mount
   onMounted(() => {
     initDarkMode()
-
-    // Listen for system preference changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const handleChange = (e: MediaQueryListEvent) => {
-      // Only auto-switch if user hasn't manually set a preference
-      const hasManualPreference = localStorage.getItem('darkMode') !== null
-      if (!hasManualPreference) {
-        setDarkMode(e.matches)
-      }
-    }
-
-    mediaQuery.addEventListener('change', handleChange)
-
-    // Cleanup
-    return () => {
-      mediaQuery.removeEventListener('change', handleChange)
-    }
   })
 
   return {
