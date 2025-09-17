@@ -16,6 +16,10 @@
     box-shadow:
       0 8px 32px 0 rgba(0, 0, 0, 0.25),
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    /* Mobile optimization to prevent white flashes */
+    will-change: transform, opacity, backdrop-filter;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
 
   .card::before {
@@ -758,25 +762,45 @@
 }
 
 /* Vue transition animations */
-.slide-fade-enter-active,
+.slide-fade-enter-active {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
+}
+
 .slide-fade-leave-active {
-  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.3s cubic-bezier(0.5, 0, 0.75, 0.2);
 }
 
 .slide-fade-enter-from {
   opacity: 0;
-  transform: translateY(-20px) scale(0.95);
+  transform: translateY(-15px) scale(0.96);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
 }
 
 .slide-fade-leave-to {
   opacity: 0;
-  transform: translateY(-10px) scale(0.98);
+  transform: translateY(-8px) scale(0.98);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
 }
 
 .slide-fade-enter-to,
 .slide-fade-leave-from {
   opacity: 1;
   transform: translateY(0) scale(1);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+/* API Configuration container to prevent layout shifts */
+.api-config-container {
+  position: relative;
+  overflow: hidden;
+  /* Mobile optimizations */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: height;
+  transition: height 0.3s ease;
 }/* Glassmorphism state classes */
 .success-state {
   background: rgba(34, 197, 94, 0.1);

@@ -110,46 +110,48 @@
             </div>
 
             <!-- API Configuration Card -->
-            <transition name="slide-fade" mode="out-in">
-              <div v-show="showApiConfig" class="card slide-up">
-                <div class="flex items-center justify-between mb-4">
-                  <h2 class="text-lg font-semibold text-primary flex items-center">
-                    <svg class="w-5 h-5 mr-2 text-accent" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12,15C12.81,15 13.5,14.7 14.11,14.11C14.7,13.5 15,12.81 15,12C15,11.19 14.7,10.5 14.11,9.89C13.5,9.3 12.81,9 12,9C11.19,9 10.5,9.3 9.89,9.89C9.3,10.5 9,11.19 9,12C9,12.81 9.3,13.5 9.89,14.11C10.5,14.7 11.19,15 12,15M12,2L14.39,5.42C15.92,7.31 17.68,8.88 19.68,10.11L22,12L19.68,13.89C17.68,15.12 15.92,16.69 14.39,18.58L12,22L9.61,18.58C8.08,16.69 6.32,15.12 4.32,13.89L2,12L4.32,10.11C6.32,8.88 8.08,7.31 9.61,5.42L12,2Z"/>
-                    </svg>
-                    API Configuration
-                  </h2>
-                  <button @click="toggleApiConfig" class="icon-container">
-                    <svg class="w-4 h-4 text-secondary transition-transform duration-300" :class="{ 'rotate-180': showApiConfig }" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
-                    </svg>
-                  </button>
-                </div>
-
-                <div class="space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium text-secondary mb-2">API Base URL</label>
-                    <div class="flex space-x-2">
-                      <input
-                        v-model="apiBase"
-                        @input="updateApiBase"
-                        type="url"
-                        placeholder="https://api.example.com"
-                        class="input-field flex-1"
-                      />
-                      <button @click="saveBase" class="btn-outline">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/>
-                        </svg>
-                      </button>
-                    </div>
+            <div class="api-config-container">
+              <transition name="slide-fade">
+                <div v-show="showApiConfig" class="card slide-up">
+                  <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-primary flex items-center">
+                      <svg class="w-5 h-5 mr-2 text-accent" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12,15C12.81,15 13.5,14.7 14.11,14.11C14.7,13.5 15,12.81 15,12C15,11.19 14.7,10.5 14.11,9.89C13.5,9.3 12.81,9 12,9C11.19,9 10.5,9.3 9.89,9.89C9.3,10.5 9,11.19 9,12C9,12.81 9.3,13.5 9.89,14.11C10.5,14.7 11.19,15 12,15M12,2L14.39,5.42C15.92,7.31 17.68,8.88 19.68,10.11L22,12L19.68,13.89C17.68,15.12 15.92,16.69 14.39,18.58L12,22L9.61,18.58C8.08,16.69 6.32,15.12 4.32,13.89L2,12L4.32,10.11C6.32,8.88 8.08,7.31 9.61,5.42L12,2Z"/>
+                      </svg>
+                      API Configuration
+                    </h2>
+                    <button @click="toggleApiConfig" class="icon-container">
+                      <svg class="w-4 h-4 text-secondary transition-transform duration-300" :class="{ 'rotate-180': showApiConfig }" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z"/>
+                      </svg>
+                    </button>
                   </div>
-                  <p class="text-xs text-muted">
-                    Configure your MasterKey API endpoint for authentication services.
-                  </p>
+
+                  <div class="space-y-4">
+                    <div>
+                      <label class="block text-sm font-medium text-secondary mb-2">API Base URL</label>
+                      <div class="flex space-x-2">
+                        <input
+                          v-model="apiBase"
+                          @input="updateApiBase"
+                          type="url"
+                          placeholder="https://api.example.com"
+                          class="input-field flex-1"
+                        />
+                        <button @click="saveBase" class="btn-outline">
+                          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <p class="text-xs text-muted">
+                      Configure your MasterKey API endpoint for authentication services.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </transition>
+              </transition>
+            </div>
 
             <!-- Quick Actions Grid -->
             <div class="grid grid-cols-2 gap-4">
